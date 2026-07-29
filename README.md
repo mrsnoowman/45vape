@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 45 Vape — Next.js + MySQL
 
-## Getting Started
+Toko vape online dengan alur profesional (guest cart → login merge → profile → checkout → orders).
 
-First, run the development server:
+## Database (MySQL lokal)
+
+- Host: `127.0.0.1`
+- User: `root`
+- Password: _(kosong)_
+- Database: `45vape_next`
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# pastikan MySQL XAMPP sudah running, lalu:
+npm run db:migrate
+npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Akun admin
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Seed hanya membuat akun admin (tanpa produk dummy). Email/password dari `.env`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `ADMIN_EMAIL` (default: `admin@45vape.test`)
+- `ADMIN_PASSWORD` (default: `admin123`)
 
-## Learn More
+Produk diinput lewat `/admin/products`.
 
-To learn more about Next.js, take a look at the following resources:
+## Menjalankan
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cd 45vape-next
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Buka http://localhost:3000
 
-## Deploy on Vercel
+## Alur belanja
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Guest boleh **add to cart** (tersimpan di MySQL via cookie guest)
+2. Klik checkout → jika belum login, diarahkan ke **login/register**
+3. Saat login/register, **keranjang guest digabung** ke akun
+4. Jika profil belum lengkap → **lengkapi alamat pengiriman**
+5. Checkout membuat **order** + mengurangi stok + kosongkan cart
+6. Pantau di halaman **Status Pesanan**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Struktur tabel
+
+`users`, `products`, `product_variants`, `cart_items`, `orders`, `order_items`
