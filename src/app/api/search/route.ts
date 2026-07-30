@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, items: [] });
   }
 
-  const products = await listProducts({ q });
-  const items = products.slice(0, 8).map((p) => ({
+  const products = await listProducts({ q, limit: 8 });
+  const items = products.map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    total: products.length,
+    total: items.length,
     items,
   });
 }

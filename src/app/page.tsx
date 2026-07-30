@@ -15,7 +15,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { getCatalogFacets, listProducts } from "@/lib/catalog";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, buildPageMetadata } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   ...buildPageMetadata({
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const [featured, facets] = await Promise.all([
-    listProducts({ featured: true }),
+    listProducts({ featured: true, limit: 12 }),
     getCatalogFacets(),
   ]);
 

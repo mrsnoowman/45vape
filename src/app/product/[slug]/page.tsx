@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
 import ProductDetailClient from "@/components/ProductDetailClient";
-import { getProductBySlug, getRelatedProducts, listProducts } from "@/lib/catalog";
+import { getProductBySlug, getRelatedProducts, listProductSlugs } from "@/lib/catalog";
 import { categoryLabel } from "@/lib/catalog-meta";
 import {
   absoluteUrl,
@@ -14,8 +14,8 @@ import {
 
 export async function generateStaticParams() {
   try {
-    const products = await listProducts({});
-    return products.map((p) => ({ slug: p.slug }));
+    const slugs = await listProductSlugs();
+    return slugs.map((slug) => ({ slug }));
   } catch {
     return [];
   }

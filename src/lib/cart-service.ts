@@ -53,9 +53,15 @@ function ownerWhere(owner: CartOwner) {
 export async function getCartView(owner: CartOwner) {
   const items = await prisma.cartItem.findMany({
     where: ownerWhere(owner),
-    include: {
-      product: true,
-      variant: true,
+    select: {
+      id: true,
+      productId: true,
+      variantId: true,
+      qty: true,
+      product: { select: { slug: true, name: true, brand: true, image: true } },
+      variant: {
+        select: { nic: true, stock: true, price: true, discountPercent: true },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -172,31 +178,37 @@ export async function clearCart(owner: CartOwner) {
 export async function mergeGuestCartToUser(guestId: string, userId: number) {
   if (!isValidGuestId(guestId) || !userId) return;
 
-  const guestItems = await prisma.cartItem.findMany({
-    where: { guestId, userId: null },
-  });
+  const [guestItems, userItems] = await Promise.all([
+    prisma.cartItem.findMany({
+      where: { guestId, userId: null },
+      include: { variant: { select: { stock: true } } },
+    }),
+    prisma.cartItem.findMany({
+      where: { userId, guestId: null },
+      include: { variant: { select: { stock: true } } },
+    }),
+  ]);
   if (!guestItems.length) return;
 
-  for (const item of guestItems) {
-    const existing = await prisma.cartItem.findFirst({
-      where: { userId, guestId: null, variantId: item.variantId },
-      include: { variant: true },
-    });
+  const userByVariant = new Map(userItems.map((row) => [row.variantId, row]));
 
-    if (existing) {
-      const mergedQty = Math.min(existing.qty + item.qty, existing.variant.stock);
-      await prisma.cartItem.update({
-        where: { id: existing.id },
-        data: { qty: mergedQty },
-      });
-      await prisma.cartItem.delete({ where: { id: item.id } });
-    } else {
-      await prisma.cartItem.update({
-        where: { id: item.id },
-        data: { userId, guestId: null },
-      });
+  await prisma.$transaction(async (tx) => {
+    for (const item of guestItems) {
+      const existing = userByVariant.get(item.variantId);
+      if (existing) {
+        const mergedQty = Math.min(existing.qty + item.qty, existing.variant.stock);
+        await tx.cartItem.update({
+          where: { id: existing.id },
+          data: { qty: mergedQty },
+        });
+        await tx.cartItem.delete({ where: { id: item.id } });
+      } else {
+        await tx.cartItem.update({
+          where: { id: item.id },
+          data: { userId, guestId: null },
+        });
+      }
     }
-  }
-
-  await prisma.cartItem.deleteMany({ where: { guestId, userId: null } });
+    await tx.cartItem.deleteMany({ where: { guestId, userId: null } });
+  });
 }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { effectivePrice } from "@/lib/pricing";
 import type { ProductDTO } from "@/lib/types";
@@ -19,10 +20,33 @@ export type ProductListOpts = {
   maxPrice?: number | null;
   inStock?: boolean | string | null;
   onSale?: boolean | string | null;
+  /** Batasi jumlah hasil (untuk home/search). Default: semua setelah filter. */
+  limit?: number | null;
 };
 
+const listSelect = {
+  id: true,
+  slug: true,
+  name: true,
+  brand: true,
+  brandSlug: true,
+  category: true,
+  subcategory: true,
+  image: true,
+  featured: true,
+  variants: {
+    orderBy: { id: "asc" as const },
+    select: {
+      id: true,
+      nic: true,
+      stock: true,
+      price: true,
+      discountPercent: true,
+    },
+  },
+} as const;
+
 function buildGallery(image: string) {
-  // Hanya gambar milik produk ini — jangan isi filler kategori/brand lain
   const src = (image || "").trim();
   return src ? [src] : [];
 }
@@ -35,10 +59,9 @@ function mapProduct(p: {
   brandSlug: string;
   category: string;
   subcategory: string | null;
-  description: string;
+  description?: string;
   image: string;
   featured: boolean;
-  createdAt?: Date;
   variants: {
     id: number;
     nic: string | null;
@@ -53,7 +76,16 @@ function mapProduct(p: {
   }));
   const prices = variants.map((v) => v.effectivePrice);
   return {
-    ...p,
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    brand: p.brand,
+    brandSlug: p.brandSlug,
+    category: p.category,
+    subcategory: p.subcategory,
+    description: p.description ?? "",
+    image: p.image,
+    featured: p.featured,
     gallery: buildGallery(p.image),
     variants,
     minPrice: prices.length ? Math.min(...prices) : 0,
@@ -91,7 +123,7 @@ export async function listProducts(opts: ProductListOpts) {
           }
         : {}),
     },
-    include: { variants: { orderBy: { id: "asc" } } },
+    select: listSelect,
     orderBy: [{ featured: "desc" }, { name: "asc" }],
   });
 
@@ -124,6 +156,10 @@ export async function listProducts(opts: ProductListOpts) {
         return a.name.localeCompare(b.name, "id");
     }
   });
+
+  if (opts.limit != null && opts.limit > 0) {
+    list = list.slice(0, opts.limit);
+  }
 
   return list;
 }
@@ -175,21 +211,29 @@ export async function getCatalogFacets() {
   };
 }
 
-export async function getProductBySlug(slug: string) {
+export const getProductBySlug = cache(async (slug: string) => {
   const product = await prisma.product.findUnique({
     where: { slug },
     include: { variants: { orderBy: { id: "asc" } } },
   });
   return product ? mapProduct(product) : null;
-}
+});
 
 export async function getRelatedProducts(category: string, excludeId: number, take = 4) {
   const products = await prisma.product.findMany({
     where: { category, id: { not: excludeId } },
-    include: { variants: true },
+    select: listSelect,
     take,
   });
   return products.map(mapProduct);
+}
+
+export async function listProductSlugs() {
+  const rows = await prisma.product.findMany({
+    select: { slug: true },
+    orderBy: { id: "asc" },
+  });
+  return rows.map((r) => r.slug);
 }
 
 export async function countByCategory() {

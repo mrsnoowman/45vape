@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { useCartStore, type CartLine } from "@/store/cart-store";
 
 export type AuthUser = {
   id: number;
@@ -16,16 +17,25 @@ export type AuthUser = {
   profileCompletion?: number;
 };
 
+type CartPayload = {
+  items: CartLine[];
+  subtotal: number;
+  totalItems: number;
+};
+
 type AuthState = {
   user: AuthUser | null;
   ready: boolean;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; message: string; cart?: CartPayload }>;
   register: (
     email: string,
     password: string,
     confirmPassword: string
-  ) => Promise<{ ok: boolean; message: string }>;
+  ) => Promise<{ ok: boolean; message: string; cart?: CartPayload }>;
   logout: () => Promise<void>;
   updateProfile: (data: {
     name: string;
@@ -36,6 +46,11 @@ type AuthState = {
     postalCode: string;
   }) => Promise<{ ok: boolean; message: string }>;
 };
+
+function applyCart(cart?: CartPayload) {
+  if (!cart) return;
+  useCartStore.setState({ ...cart, ready: true, loading: false });
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -56,8 +71,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       body: JSON.stringify({ action: "login", email, password }),
     });
     const data = await res.json();
-    if (data.ok) set({ user: data.user });
-    return { ok: Boolean(data.ok), message: data.message || "Gagal login" };
+    if (data.ok) {
+      set({ user: data.user });
+      applyCart(data.cart);
+    }
+    return { ok: Boolean(data.ok), message: data.message || "Gagal login", cart: data.cart };
   },
   register: async (email, password, confirmPassword) => {
     const res = await fetch("/api/auth", {
@@ -66,8 +84,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       body: JSON.stringify({ action: "register", email, password, confirmPassword }),
     });
     const data = await res.json();
-    if (data.ok) set({ user: data.user });
-    return { ok: Boolean(data.ok), message: data.message || "Gagal daftar" };
+    if (data.ok) {
+      set({ user: data.user });
+      applyCart(data.cart);
+    }
+    return { ok: Boolean(data.ok), message: data.message || "Gagal daftar", cart: data.cart };
   },
   logout: async () => {
     await fetch("/api/auth", {
@@ -76,6 +97,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       body: JSON.stringify({ action: "logout" }),
     });
     set({ user: null });
+    useCartStore.setState({ items: [], subtotal: 0, totalItems: 0, ready: true });
   },
   updateProfile: async (payload) => {
     const res = await fetch("/api/profile", {

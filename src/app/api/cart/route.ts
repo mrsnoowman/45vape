@@ -88,9 +88,8 @@ export async function PATCH(req: NextRequest) {
 
   return withOwnerResponse(async (owner) => {
     const result = await updateCartQty(owner, parsed.data.variantId, parsed.data.qty);
-    const cart = await getCartView(owner);
     return NextResponse.json(
-      { ...result, cart, scope: owner.type },
+      { ...result, scope: owner.type },
       { status: result.ok ? 200 : 400 }
     );
   });
@@ -105,7 +104,6 @@ export async function DELETE(req: NextRequest) {
 
   return withOwnerResponse(async (owner) => {
     const result = await removeCartItem(owner, parsed.data.variantId);
-    const cart = await getCartView(owner);
-    return NextResponse.json({ ...result, cart, scope: owner.type });
+    return NextResponse.json({ ...result, scope: owner.type });
   });
 }

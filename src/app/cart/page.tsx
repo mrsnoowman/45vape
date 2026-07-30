@@ -27,7 +27,7 @@ export default function CartPage() {
   const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
   const checkoutHref = user ? "/checkout" : "/login?next=/checkout";
 
-  if (!ready || !authReady) {
+  if (!ready) {
     return <PageLoading label="Menyiapkan keranjang" variant="cart" />;
   }
 

@@ -7,11 +7,9 @@ import { FormEvent, Suspense, useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import { PageLoading } from "@/components/PageLoading";
 import { useAuthStore } from "@/store/auth-store";
-import { useCartStore } from "@/store/cart-store";
 
 function LoginForm() {
   const login = useAuthStore((s) => s.login);
-  const refreshCart = useCartStore((s) => s.refresh);
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/profile";
@@ -30,7 +28,6 @@ function LoginForm() {
       setError(res.message);
       return;
     }
-    await refreshCart();
     router.push(next);
   };
 

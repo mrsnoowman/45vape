@@ -13,7 +13,7 @@ import {
   setSessionCookie,
   clearSessionCookie,
 } from "@/lib/auth";
-import { createGuestId, isValidGuestId, mergeGuestCartToUser } from "@/lib/cart-service";
+import { createGuestId, getCartView, isValidGuestId, mergeGuestCartToUser } from "@/lib/cart-service";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -78,11 +78,15 @@ export async function POST(req: NextRequest) {
       await mergeGuestCartToUser(guestId, user.id);
     }
 
-    const token = await createSessionToken({ userId: user.id, email: user.email });
+    const [token, cart] = await Promise.all([
+      createSessionToken({ userId: user.id, email: user.email }),
+      getCartView({ type: "user", userId: user.id }),
+    ]);
     const res = NextResponse.json({
       ok: true,
       message: "Login berhasil",
       user: publicUser(user),
+      cart,
     });
     setSessionCookie(res, token);
     clearGuestCookie(res);
@@ -113,11 +117,15 @@ export async function POST(req: NextRequest) {
       await mergeGuestCartToUser(guestId, user.id);
     }
 
-    const token = await createSessionToken({ userId: user.id, email: user.email });
+    const [token, cart] = await Promise.all([
+      createSessionToken({ userId: user.id, email: user.email }),
+      getCartView({ type: "user", userId: user.id }),
+    ]);
     const res = NextResponse.json({
       ok: true,
       message: "Registrasi berhasil",
       user: publicUser(user),
+      cart,
     });
     setSessionCookie(res, token);
     clearGuestCookie(res);

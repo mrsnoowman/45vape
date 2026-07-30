@@ -5,7 +5,6 @@ import { FormEvent, useState } from "react";
 import { Lock, Mail, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { useCartStore } from "@/store/cart-store";
 import { useUiStore } from "@/store/ui-store";
 
 export function AuthModal() {
@@ -17,7 +16,6 @@ export function AuthModal() {
   const pushToast = useUiStore((s) => s.pushToast);
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
-  const refreshCart = useCartStore((s) => s.refresh);
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -41,7 +39,6 @@ export function AuthModal() {
       setError(res.message);
       return;
     }
-    await refreshCart();
     pushToast({
       title: tab === "login" ? "Login berhasil" : "Akun dibuat",
       subtitle: "Keranjang guest otomatis digabung",

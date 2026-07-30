@@ -3506,6 +3506,21 @@ img {
   margin-top: 1.35rem;
 }
 
+.catalog-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in oklab, var(--line, #d7e2ea) 80%, transparent);
+}
+
+.catalog-pager__status {
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
 @media (min-width: 1024px) {
   .catalog-grid.product-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

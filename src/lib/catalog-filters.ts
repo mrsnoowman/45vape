@@ -10,6 +10,7 @@ export type CatalogQuery = {
   max?: string;
   stock?: string;
   sale?: string;
+  page?: string;
 };
 
 export const SORT_OPTIONS = [
@@ -50,6 +51,7 @@ export function productsHref(query: CatalogQuery) {
   if (query.max) params.set("max", query.max);
   if (query.stock === "1") params.set("stock", "1");
   if (query.sale === "1") params.set("sale", "1");
+  if (query.page && query.page !== "1") params.set("page", query.page);
   const qs = params.toString();
   return qs ? `/products?${qs}` : "/products";
 }

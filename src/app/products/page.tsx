@@ -2,12 +2,14 @@ import Link from "next/link";
 import { PackageSearch } from "lucide-react";
 import { CatalogShell } from "@/components/CatalogFilters";
 import { ProductCard } from "@/components/ProductCard";
-import { getCatalogFacets, listProducts } from "@/lib/catalog";
+import { getCatalogFacets, listProductSlugs, listProducts } from "@/lib/catalog";
 import { BRANDS, categoryLabel, subcategoryLabel } from "@/lib/catalog-meta";
 import type { CatalogQuery } from "@/lib/catalog-filters";
-import { countActiveFilters } from "@/lib/catalog-filters";
+import { countActiveFilters, productsHref } from "@/lib/catalog-filters";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
+
+const PAGE_SIZE = 24;
 
 export const metadata = {
   title: "Produk",
@@ -26,9 +28,11 @@ export default async function ProductsPage({
     max?: string;
     stock?: string;
     sale?: string;
+    page?: string;
   }>;
 }) {
   const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
   const query: CatalogQuery = {
     category: params.category,
     brand: params.brand,
@@ -41,7 +45,7 @@ export default async function ProductsPage({
     sale: params.sale,
   };
 
-  const [list, facets] = await Promise.all([
+  const [all, facets] = await Promise.all([
     listProducts({
       category: params.category,
       brand: params.brand,
@@ -55,6 +59,11 @@ export default async function ProductsPage({
     }),
     getCatalogFacets(),
   ]);
+
+  const totalResults = all.length;
+  const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const list = all.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const activeFilters = countActiveFilters(query);
   const brandName =
@@ -77,12 +86,18 @@ export default async function ProductsPage({
           : "Semua Produk";
 
   const lead = params.q
-    ? `${list.length} produk cocok dengan pencarianmu.`
+    ? `${totalResults} produk cocok dengan pencarianmu.`
     : subLabel && params.category
-      ? `${list.length} produk ${categoryLabel(params.category).toLowerCase()} · ${subLabel}.`
+      ? `${totalResults} produk ${categoryLabel(params.category).toLowerCase()} · ${subLabel}.`
       : activeFilters > 0
-        ? `${list.length} produk sesuai filter yang dipilih.`
+        ? `${totalResults} produk sesuai filter yang dipilih.`
         : `${facets.total} produk siap dikirim — saring kategori, brand, harga, atau stok.`;
+
+  const pageHref = (p: number) =>
+    productsHref({
+      ...query,
+      ...(p > 1 ? { page: String(p) } : {}),
+    });
 
   return (
     <div className="container-store catalog-page">
@@ -101,7 +116,7 @@ export default async function ProductsPage({
           </div>
           <div className="catalog-head__stats">
             <div className="catalog-stat-chip">
-              <strong>{list.length}</strong>
+              <strong>{totalResults}</strong>
               <span>Hasil</span>
             </div>
             <div className="catalog-stat-chip">
@@ -121,7 +136,7 @@ export default async function ProductsPage({
         brands={facets.brands}
         categoryCounts={facets.categories}
         totalAll={facets.total}
-        resultCount={list.length}
+        resultCount={totalResults}
       >
         {list.length === 0 ? (
           <div className="catalog-empty">
@@ -140,11 +155,34 @@ export default async function ProductsPage({
             </div>
           </div>
         ) : (
-          <div className="product-grid catalog-grid">
-            {list.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
-            ))}
-          </div>
+          <>
+            <div className="product-grid catalog-grid">
+              {list.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
+              ))}
+            </div>
+            {totalPages > 1 ? (
+              <nav className="catalog-pager" aria-label="Halaman produk">
+                {safePage > 1 ? (
+                  <Link href={pageHref(safePage - 1)} className="btn btn-ghost">
+                    Sebelumnya
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                <span className="catalog-pager__status">
+                  Halaman {safePage} / {totalPages}
+                </span>
+                {safePage < totalPages ? (
+                  <Link href={pageHref(safePage + 1)} className="btn btn-ghost">
+                    Selanjutnya
+                  </Link>
+                ) : (
+                  <span />
+                )}
+              </nav>
+            ) : null}
+          </>
         )}
       </CatalogShell>
     </div>
