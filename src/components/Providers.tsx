@@ -19,10 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     hydrateWishlist();
-    void (async () => {
-      await refreshAuth();
-      await refreshCart();
-    })();
+    void Promise.all([refreshAuth(), refreshCart()]);
   }, [refreshAuth, refreshCart, hydrateWishlist]);
 
   useEffect(() => {
