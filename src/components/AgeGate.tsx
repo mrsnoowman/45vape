@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CONTACT } from "@/lib/branches";
+import { SITE_LOGO, SITE_NAME } from "@/lib/seo";
 
 const STORAGE_KEY = "45vape-age-ok";
 
@@ -65,8 +65,8 @@ export function AgeGate() {
       <div className="age-gate__card">
         <div className="age-gate__logo">
           <Image
-            src={CONTACT.groupLogo}
-            alt="45 Vape Group"
+            src={SITE_LOGO}
+            alt={SITE_NAME}
             width={120}
             height={120}
             className="age-gate__logo-img"
