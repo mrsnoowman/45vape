@@ -37,7 +37,7 @@ export const SITE_LOCALE = "id_ID";
 /** Default social / OG image (1200×630 ideal). */
 export const SITE_OG_IMAGE = "/banners/banner2.png";
 export const SITE_LOGO = "/brand/IMG_3820.PNG";
-export const SITE_FAVICON = "/brand/45vape-group.png";
+export const SITE_FAVICON = "/brand/IMG_3820.PNG";
 
 export function absoluteUrl(path = "/") {
   if (!path || path === "/") return SITE_URL;

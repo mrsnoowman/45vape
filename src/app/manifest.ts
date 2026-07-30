@@ -13,13 +13,13 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "id",
     icons: [
       {
-        src: "/brand/45vape-group.png",
+        src: "/brand/IMG_3820.PNG",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/brand/45vape-group.png",
+        src: "/brand/IMG_3820.PNG",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
