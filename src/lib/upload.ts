@@ -11,6 +11,14 @@ export type UploadFile = {
 
 const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
 
+export function getUploadRoot() {
+  return process.env.UPLOAD_DIR || path.join(process.cwd(), "storage", "uploads");
+}
+
+export function getLegacyUploadRoot() {
+  return path.join(process.cwd(), "public", "uploads");
+}
+
 /** Jangan pakai `instanceof File` — di Node/Next File undici ≠ File global. */
 export function getFormFile(form: FormData, key: string): UploadFile | null {
   const value = form.get(key);
@@ -71,10 +79,20 @@ export async function savePublicImage(
     };
   }
 
-  const dir = path.join(process.cwd(), "public", "uploads", folder);
-  await mkdir(dir, { recursive: true });
   const filename = `${slugify(basename) || folder}-${Date.now()}.${ext}`;
-  const dest = path.join(dir, filename);
-  await writeFile(dest, Buffer.from(await file.arrayBuffer()));
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const primaryDir = path.join(getUploadRoot(), folder);
+  const legacyDir = path.join(getLegacyUploadRoot(), folder);
+
+  await mkdir(primaryDir, { recursive: true });
+  await writeFile(path.join(primaryDir, filename), buffer);
+
+  try {
+    await mkdir(legacyDir, { recursive: true });
+    await writeFile(path.join(legacyDir, filename), buffer);
+  } catch {
+    /* folder public boleh gagal — file utama tetap di storage/ */
+  }
+
   return { ok: true as const, path: `/uploads/${folder}/${filename}` };
 }

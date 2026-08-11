@@ -10,6 +10,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3045,
+        UPLOAD_DIR: "/var/www/store/storage/uploads",
       },
       max_memory_restart: "1G",
     },
