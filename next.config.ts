@@ -5,17 +5,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 86400,
-    deviceSizes: [640, 750, 828, 1080, 1200],
-    imageSizes: [64, 96, 128, 256, 384],
-    localPatterns: [
-      { pathname: "/uploads/**" },
-      { pathname: "/brand/**" },
-      { pathname: "/products/**" },
-      { pathname: "/categories/**" },
-      { pathname: "/banners/**" },
-    ],
+    // File upload runtime tidak bisa di-optimize /_next/image (400).
+    // Di VPS, serve langsung dari /public lebih andal.
+    unoptimized: true,
   },
   experimental: {
     optimizePackageImports: ["lucide-react"],
