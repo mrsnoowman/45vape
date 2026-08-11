@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { adminGuard, saveProductImage, slugify } from "@/lib/admin";
+import { getFormFile } from "@/lib/upload";
 
 function parseVariants(raw: string) {
   try {
@@ -63,7 +65,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   const featured = String(form.get("featured") || "") === "1";
   const slug = slugify(String(form.get("slug") || name));
   const variants = parseVariants(String(form.get("variants") || "[]"));
-  const imageFile = form.get("image");
+  const imageFile = getFormFile(form, "image");
 
   if (!name || !brand || !category || !description || !slug || !variants) {
     return NextResponse.json({ ok: false, message: "Data produk tidak lengkap" }, { status: 400 });
@@ -77,7 +79,7 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   }
 
   let image = existing.image;
-  if (imageFile instanceof File && imageFile.size > 0) {
+  if (imageFile) {
     const saved = await saveProductImage(imageFile, slug);
     if (!saved.ok) {
       return NextResponse.json({ ok: false, message: saved.message }, { status: 400 });
@@ -135,6 +137,12 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     where: { id },
     include: { variants: { orderBy: { id: "asc" } } },
   });
+
+  revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath(`/product/${slug}`);
+  if (existing.slug !== slug) revalidatePath(`/product/${existing.slug}`);
+  revalidatePath("/admin/products");
 
   return NextResponse.json({ ok: true, product });
 }

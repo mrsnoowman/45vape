@@ -4,6 +4,7 @@ import { getCartView } from "@/lib/cart-service";
 import { placeOrder } from "@/lib/checkout-service";
 import { pickShippingOption } from "@/lib/pricing";
 import { STORE, type PaymentMethod } from "@/lib/store";
+import { getFormFile } from "@/lib/upload";
 
 function readDestination(
   source: { get: (key: string) => string | null },
@@ -73,8 +74,7 @@ export async function POST(req: NextRequest) {
       return typeof value === "string" ? value : null;
     },
   });
-  const proof = form.get("paymentProof");
-  const paymentProof = proof instanceof File && proof.size > 0 ? proof : null;
+  const paymentProof = getFormFile(form, "paymentProof");
 
   if (paymentMethod !== "bank" && paymentMethod !== "whatsapp") {
     return NextResponse.json({ ok: false, message: "Pilih metode pembayaran" }, { status: 400 });

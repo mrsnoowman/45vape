@@ -5,33 +5,35 @@ import { isProfileComplete } from "@/lib/auth";
 import { getCartView, type CartOwner } from "@/lib/cart-service";
 import { pickShippingOption } from "@/lib/pricing";
 import type { PaymentMethod } from "@/lib/store";
+import type { UploadFile } from "@/lib/upload";
+import { slugify } from "@/lib/slug";
 
-const ALLOWED_PROOF = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 
-export async function savePaymentProof(file: File, orderCode: string) {
-  if (!ALLOWED_PROOF.has(file.type)) {
+function proofExt(file: UploadFile) {
+  const type = file.type.toLowerCase().split(";")[0].trim();
+  if (type === "application/pdf") return "pdf";
+  if (type === "image/png" || type === "image/x-png") return "png";
+  if (type === "image/webp") return "webp";
+  if (type === "image/jpeg" || type === "image/jpg" || type === "image/pjpeg") return "jpg";
+  const match = file.name.toLowerCase().match(/\.(jpe?g|png|webp|pdf)$/);
+  if (!match) return null;
+  return match[1] === "jpeg" ? "jpg" : match[1];
+}
+
+export async function savePaymentProof(file: UploadFile, orderCode: string) {
+  const ext = proofExt(file);
+  if (!ext) {
     return { ok: false as const, message: "Bukti harus JPG, PNG, WEBP, atau PDF" };
   }
   if (file.size > MAX_PROOF_BYTES) {
     return { ok: false as const, message: "Ukuran bukti maksimal 5 MB" };
   }
 
-  const ext =
-    file.type === "application/pdf"
-      ? "pdf"
-      : file.type === "image/png"
-        ? "png"
-        : file.type === "image/webp"
-          ? "webp"
-          : "jpg";
-
   const dir = path.join(process.cwd(), "public", "uploads", "payment-proofs");
   await mkdir(dir, { recursive: true });
-  const filename = `${orderCode.toLowerCase()}-${Date.now()}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
-
+  const filename = `${slugify(orderCode) || "order"}-${Date.now()}.${ext}`;
+  await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
   return { ok: true as const, path: `/uploads/payment-proofs/${filename}` };
 }
 
@@ -40,7 +42,7 @@ export async function placeOrder(
   input: {
     note?: string;
     paymentMethod: PaymentMethod;
-    paymentProof?: File | null;
+    paymentProof?: UploadFile | null;
     shippingService?: string | null;
     destination?: {
       address?: string | null;

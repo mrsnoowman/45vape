@@ -118,7 +118,7 @@ export function AdminProductForm({ mode, initial }: Props) {
       ),
     );
     if (form.image) body.set("imagePath", form.image);
-    if (file) body.set("image", file);
+    if (file) body.append("image", file, file.name);
 
     const url = mode === "create" ? "/api/admin/products" : `/api/admin/products/${form.id}`;
     const res = await fetch(url, {
@@ -343,7 +343,13 @@ PG/VG : 50/50`}
             {preview ? (
               <div className="admin-upload__preview">
                 <div className="admin-upload__thumb">
-                  <Image src={preview} alt="Preview" fill className="object-contain p-2" />
+                  <Image
+                    src={preview}
+                    alt="Preview"
+                    fill
+                    unoptimized={preview.startsWith("blob:")}
+                    className="object-contain p-2"
+                  />
                 </div>
                 <div className="admin-upload__meta">
                   <strong>{file ? file.name : "Gambar tersimpan"}</strong>

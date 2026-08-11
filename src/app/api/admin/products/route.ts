@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { adminGuard, saveProductImage, slugify } from "@/lib/admin";
+import { getFormFile } from "@/lib/upload";
 
 function parseVariants(raw: string) {
   try {
@@ -118,7 +120,7 @@ export async function POST(req: NextRequest) {
   const slugInput = String(form.get("slug") || "").trim();
   const slug = slugify(slugInput || name);
   const variants = parseVariants(String(form.get("variants") || "[]"));
-  const imageFile = form.get("image");
+  const imageFile = getFormFile(form, "image");
 
   if (!name || !brand || !category || !description || !slug || !variants) {
     return NextResponse.json(
@@ -137,7 +139,7 @@ export async function POST(req: NextRequest) {
   }
 
   let image = String(form.get("imagePath") || "").trim();
-  if (imageFile instanceof File && imageFile.size > 0) {
+  if (imageFile) {
     const saved = await saveProductImage(imageFile, slug);
     if (!saved.ok) {
       return NextResponse.json({ ok: false, message: saved.message }, { status: 400 });
@@ -170,6 +172,11 @@ export async function POST(req: NextRequest) {
     },
     include: { variants: true },
   });
+
+  revalidatePath("/");
+  revalidatePath("/products");
+  revalidatePath(`/product/${product.slug}`);
+  revalidatePath("/admin/products");
 
   return NextResponse.json({ ok: true, product });
 }
